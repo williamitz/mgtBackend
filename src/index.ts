@@ -1,8 +1,10 @@
 
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import router from "./routes/routing";
 import ServerExpress from './classes/server';
+
+import mongoose from 'mongoose';
+import AppRouter from './routes/routing';
 
 let server = ServerExpress.instance;
 
@@ -17,7 +19,15 @@ server.app.use( bodyParser.json() );
 server.app.use( cors( { origin: true, credentials: true } ) );
 
 // ruting de mis apiRest
-server.app.use( router );
+server.app.use( AppRouter );
+
+mongoose.connect('mongodb://localhost:27017/ionic_mgt_db', { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }, (err: any) => {
+    if (err) {
+        throw err;
+    }
+
+    console.log('Conectado a base de datos!!');
+});
 
 
 server.onStart( (err: any) => {

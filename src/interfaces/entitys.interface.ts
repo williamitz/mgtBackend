@@ -9,4 +9,5 @@ export interface ResponsePromise {
     ok: boolean;
     message: string;
     error?: any;
+    showError?: number;
 }

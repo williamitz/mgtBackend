@@ -1,15 +1,11 @@
 
 
 import { Request, Response, Router} from 'express';
+import UserRoutes from './user.route';
 
 
-const router = Router();
+const AppRouter = Router();
 
-router.post( '/login', (req: Request, res: Response) => {
-    res.json({
-        ok: true,
-        message: 'Hola desde backend'
-    });
-});
+AppRouter.use( UserRoutes )
 
-export default router;
+export default AppRouter;
