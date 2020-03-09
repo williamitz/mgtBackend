@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -37,7 +38,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var request_ip_1 = __importDefault(require("request-ip"));
@@ -45,8 +45,9 @@ var user_model_1 = require("../models/user.model");
 var bcrypt_1 = __importDefault(require("bcrypt"));
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 var enviroment_1 = require("../global/enviroment");
+var authorization_md_1 = require("../middlewares/authorization.md");
 var UserRoutes = express_1.Router();
-UserRoutes.post('/singIn', function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
     var body, resVerify, newUser;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -70,7 +71,7 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(_this, void 0,
                             showError: resVerify.showError
                         })];
                 }
-                newUser = new user_model_1.User({
+                newUser = {
                     name: body.name,
                     surname: body.surname,
                     nameComplete: body.surname + ", " + body.name,
@@ -80,18 +81,17 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(_this, void 0,
                         date: Date.now,
                         ip: request_ip_1.default.getClientIp(req)
                     }
-                });
-                newUser.save(function (err, userDB) {
-                    if (err) {
-                        return res.status(400).json({
-                            ok: false,
-                            error: err
-                        });
-                    }
+                };
+                user_model_1.User.create(newUser).then(function (userDB) {
                     res.json({
                         ok: true,
                         data: userDB,
                         showError: resVerify.showError
+                    });
+                }).catch(function (err) {
+                    return res.status(400).json({
+                        ok: false,
+                        error: err
                     });
                 });
                 return [2 /*return*/];
@@ -100,7 +100,7 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(_this, void 0,
 }); });
 UserRoutes.post('/login', function (req, res) {
     var body = req.body;
-    user_model_1.User.findOne({ nameUser: body.nameUser }, [], function (err, userDB) { return __awaiter(_this, void 0, void 0, function () {
+    user_model_1.User.findOne({ nameUser: body.nameUser }, [], function (err, userDB) { return __awaiter(void 0, void 0, void 0, function () {
         var showError, token;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -118,10 +118,10 @@ UserRoutes.post('/login', function (req, res) {
                     if (!userDB.statusRegister) {
                         return [2 /*return*/, res.json({ ok: true, showError: 2 })];
                     }
-                    if (!bcrypt_1.default.compareSync(body.passwordUser, userDB.passwordUser)) {
+                    if (!userDB.comparePassword(body.passwordUser)) {
                         return [2 /*return*/, res.json({ ok: true, showError: 4 })];
                     }
-                    userDB.passwordUser = null;
+                    userDB.passwordUser = '';
                     console.log('user db', userDB);
                     return [4 /*yield*/, jsonwebtoken_1.default.sign({ userDB: userDB }, enviroment_1.SEED_KEY, { expiresIn: '1d' })];
                 case 1:
@@ -137,6 +137,59 @@ UserRoutes.post('/login', function (req, res) {
             }
         });
     }); });
+});
+UserRoutes.get('/profile/get', [authorization_md_1.verifyToken], function (req, res) {
+    var dataUser = req.body.userData;
+    // console.log(dataUser);
+    user_model_1.User.findOne({ _id: dataUser._id }, [], function (error, userDB) {
+        if (error) {
+            return res.status(400).json({
+                ok: true,
+                error: error
+            });
+        }
+        userDB.passwordUser = '';
+        res.json({
+            ok: true,
+            data: userDB
+        });
+    });
+});
+UserRoutes.post('/profile/update', [authorization_md_1.verifyToken], function (req, res) {
+    var body = req.body;
+    var dataUser = req.body.userData;
+    var arrUpdate = {
+        $set: {
+            name: body.name,
+            surname: body.surname,
+            nameComplete: body.surname + ", " + body.name,
+            email: body.email,
+            phone: body.phone,
+            sex: body.sex,
+            dateBorn: body.dateBorn,
+            aboutMe: body.aboutMe
+        }
+    };
+    user_model_1.User.update({ _id: dataUser._id }, arrUpdate, function (error, userDB) {
+        if (error) {
+            return res.status(400).json({
+                ok: false,
+                error: error
+            });
+        }
+        if (!userDB) {
+            return res.status(400).json({
+                ok: false,
+                error: {
+                    message: 'No se encontró regoistro de usuario'
+                }
+            });
+        }
+        res.json({
+            ok: true,
+            data: userDB
+        });
+    });
 });
 function verifyUser(nameUser) {
     return new Promise(function (resolve) {

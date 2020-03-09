@@ -5,7 +5,8 @@ import { ResponsePromise } from '../interfaces/entitys.interface';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { SEED_KEY } from '../global/enviroment';
-
+import { verifyToken } from '../middlewares/authorization.md';
+import { Document } from 'mongoose';
 
 const UserRoutes = Router();
 
@@ -31,7 +32,7 @@ UserRoutes.post('/singIn', async (req: Request, res: Response) => {
         });
     }
     
-    let newUser = new User({
+    let newUser = {
         name : body.name,
         surname : body.surname,
         nameComplete : `${ body.surname }, ${ body.name }`,
@@ -41,29 +42,32 @@ UserRoutes.post('/singIn', async (req: Request, res: Response) => {
             date: Date.now,
             ip: requestIp.getClientIp( req )
         }
-    });
+    };
 
-    newUser.save( (err, userDB) => {
-        if (err) {
-            return res.status(400).json({
-                ok: false,
-                error: err
-            });
-        }
-
+    User.create( newUser ).then( userDB => {
+        
         res.json({
             ok: true,
             data: userDB,
             showError: resVerify.showError
         });
-    });
+
+    }).catch( err => {
+        
+        return res.status(400).json({
+            ok: false,
+            error: err
+        });
+        
+    });        
+
 });
 
 
 UserRoutes.post('/login', (req: Request, res: Response) => {
     let body = req.body;
 
-    User.findOne( { nameUser: body.nameUser }, [], async (err: any, userDB: any) => {
+    User.findOne( { nameUser: body.nameUser }, [], async (err, userDB) => {
         if (err) {
             return res.status(400).json({
                 ok: false,
@@ -74,16 +78,16 @@ UserRoutes.post('/login', (req: Request, res: Response) => {
         if (!userDB) {
             return res.json({ ok: true, showError: 1 });
         }
-
+        
         if (!userDB.statusRegister) {
             return res.json({ ok: true, showError: 2 });
         }
 
-        if ( !bcrypt.compareSync( body.passwordUser, userDB.passwordUser ) ) {
+        if ( !userDB.comparePassword( body.passwordUser ) ) {
             return res.json({ ok: true, showError: 4 });
         }
 
-        userDB.passwordUser = null;
+        userDB.passwordUser = '';
 
         console.log('user db', userDB);
 
@@ -98,6 +102,74 @@ UserRoutes.post('/login', (req: Request, res: Response) => {
             token
         });
     });
+});
+
+UserRoutes.get('/profile/get', [verifyToken], (req: Request, res: Response) => {
+    
+    let dataUser = req.body.userData;
+    // console.log(dataUser);
+
+    User.findOne( { _id : dataUser._id }, [], (error: any, userDB: any) => {
+
+        if (error) {
+            return res.status(400).json({
+                ok: true,
+                error
+            });
+        }
+
+        userDB.passwordUser = '';
+
+        res.json({
+            ok: true,
+            data: userDB
+        });
+    });
+    
+});
+
+UserRoutes.post('/profile/update', [verifyToken], (req: Request, res: Response) => {
+    let body = req.body;
+    let dataUser = req.body.userData;
+
+    let arrUpdate = {
+        $set: {
+            name: body.name,
+            surname: body.surname,
+            nameComplete: `${ body.surname }, ${ body.name }`,
+            email: body.email,
+            phone: body.phone,
+            sex: body.sex,
+            dateBorn: body.dateBorn,
+            aboutMe: body.aboutMe
+        }
+    }
+
+    User.update( { _id: dataUser._id }, arrUpdate, (error, userDB) =>  {
+
+        if (error) {
+            return res.status(400).json({
+                ok: false,
+                error
+            });
+        }
+
+        if (!userDB) {
+            return res.status(400).json({
+                ok: false,
+                error: {
+                    message: 'No se encontró regoistro de usuario'
+                }
+            });
+        }
+
+        res.json({
+            ok: true,
+            data: userDB
+        }); 
+
+    });
+
 });
 
 function verifyUser( nameUser: string ): Promise<ResponsePromise> {
