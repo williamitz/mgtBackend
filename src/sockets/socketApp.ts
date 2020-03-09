@@ -28,7 +28,7 @@ export const onDisconnectClient = ( client: Socket ) => {
 };
 
 export const onSingInClient = ( client: Socket, io: SocketIO.Server ) => {
-    client.on('sigin-client', async ( payload: PayloadSingIn ) => {
+    client.on('sigin-client', async ( payload: any ) => {
 
         // console.log('payload ', payload);
 

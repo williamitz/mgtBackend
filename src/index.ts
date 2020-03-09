@@ -1,13 +1,12 @@
 
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import ServerExpress from './classes/server';
 
 import mongoose from 'mongoose';
 import AppRouter from './routes/routing';
+import ServerExpress from './classes/server';
 
 let server = ServerExpress.instance;
-
 
 // parse application/x-www-form-urlencoded
 server.app.use( bodyParser.urlencoded( {extended: true} ) );
@@ -25,7 +24,7 @@ mongoose.connect('mongodb://localhost:27017/ionic_mgt_db', { useNewUrlParser: tr
     if (err) {
         throw err;
     }
-
+ 
     console.log('Conectado a base de datos!!');
 });
 
@@ -36,6 +35,6 @@ server.onStart( (err: any) => {
         throw new Error( 'Error al iniciar servidor de express' );
     }
 
-    console.log('Servidor corriendo en puerto: ', server.port);
+    console.log('Servidor corriendo en puerto:s ', server.port);
 
 });

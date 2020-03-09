@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -38,12 +37,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var request_ip_1 = __importDefault(require("request-ip"));
 var user_model_1 = require("../models/user.model");
+var bcrypt_1 = __importDefault(require("bcrypt"));
+var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+var enviroment_1 = require("../global/enviroment");
 var UserRoutes = express_1.Router();
-UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
+UserRoutes.post('/singIn', function (req, res) { return __awaiter(_this, void 0, void 0, function () {
     var body, resVerify, newUser;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -59,11 +62,12 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0
                         })];
                 }
                 if (resVerify.ok && resVerify.showError !== 0) {
-                    return [2 /*return*/, res.status(400).json({
-                            ok: false,
+                    return [2 /*return*/, res.json({
+                            ok: true,
                             error: {
                                 message: resVerify.message
-                            }
+                            },
+                            showError: resVerify.showError
                         })];
                 }
                 newUser = new user_model_1.User({
@@ -71,7 +75,7 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0
                     surname: body.surname,
                     nameComplete: body.surname + ", " + body.name,
                     nameUser: body.nameUser,
-                    passwordUser: body.passwordUser,
+                    passwordUser: bcrypt_1.default.hashSync(body.passwordUser, 10),
                     registered: {
                         date: Date.now,
                         ip: request_ip_1.default.getClientIp(req)
@@ -86,13 +90,54 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0
                     }
                     res.json({
                         ok: true,
-                        data: userDB
+                        data: userDB,
+                        showError: resVerify.showError
                     });
                 });
                 return [2 /*return*/];
         }
     });
 }); });
+UserRoutes.post('/login', function (req, res) {
+    var body = req.body;
+    user_model_1.User.findOne({ nameUser: body.nameUser }, [], function (err, userDB) { return __awaiter(_this, void 0, void 0, function () {
+        var showError, token;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (err) {
+                        return [2 /*return*/, res.status(400).json({
+                                ok: false,
+                                error: err
+                            })];
+                    }
+                    showError = 0;
+                    if (!userDB) {
+                        return [2 /*return*/, res.json({ ok: true, showError: 1 })];
+                    }
+                    if (!userDB.statusRegister) {
+                        return [2 /*return*/, res.json({ ok: true, showError: 2 })];
+                    }
+                    if (!bcrypt_1.default.compareSync(body.passwordUser, userDB.passwordUser)) {
+                        return [2 /*return*/, res.json({ ok: true, showError: 4 })];
+                    }
+                    userDB.passwordUser = null;
+                    console.log('user db', userDB);
+                    return [4 /*yield*/, jsonwebtoken_1.default.sign({ userDB: userDB }, enviroment_1.SEED_KEY, { expiresIn: '1d' })];
+                case 1:
+                    token = _a.sent();
+                    console.log(token);
+                    res.json({
+                        ok: true,
+                        showError: showError,
+                        data: userDB,
+                        token: token
+                    });
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+});
 function verifyUser(nameUser) {
     return new Promise(function (resolve) {
         user_model_1.User.findOne({ nameUser: nameUser }, ['statusRegister'], function (err, userDB) {
@@ -102,7 +147,7 @@ function verifyUser(nameUser) {
             var showError = 0;
             if (userDB) {
                 showError += 1;
-                if (userDB.statusRegister) {
+                if (!userDB.statusRegister) {
                     showError += 2;
                 }
             }

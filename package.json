@@ -9,19 +9,31 @@
   "author": "Ing. William Calle Quintero",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^4.0.1",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.9.3",
     "request-ip": "^2.1.3",
     "socket.io": "^2.3.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^3.0.0",
     "@types/cors": "^2.8.6",
     "@types/express": "^4.17.3",
+    "@types/jsonwebtoken": "^8.3.8",
     "@types/mongoose": "^5.7.3",
     "@types/node": "^13.9.0",
     "@types/request-ip": "0.0.35",
     "@types/socket.io": "^2.1.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/williamitz/mgtBackend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/williamitz/mgtBackend/issues"
+  },
+  "homepage": "https://github.com/williamitz/mgtBackend#readme"
 }
