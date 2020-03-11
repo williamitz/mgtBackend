@@ -21,6 +21,7 @@ mongoose_1.default.connect('mongodb://localhost:27017/ionic_mgt_db', { useNewUrl
     if (err) {
         throw err;
     }
+    // let psw = bcrypt.hashSync('123456Cq', 10);
     console.log('Conectado a base de datos!!');
 });
 server.onStart(function (err) {

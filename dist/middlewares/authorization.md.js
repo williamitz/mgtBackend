@@ -14,7 +14,7 @@ exports.verifyToken = function (req, res, next) {
                 error: error
             });
         }
-        req.body.userData = decoded.userDB;
+        req.user = decoded.userDB;
         next();
     });
 };

@@ -6,7 +6,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { SEED_KEY } from '../global/enviroment';
 import { verifyToken } from '../middlewares/authorization.md';
-import { Document } from 'mongoose';
 
 const UserRoutes = Router();
 
@@ -39,7 +38,7 @@ UserRoutes.post('/singIn', async (req: Request, res: Response) => {
         nameUser : body.nameUser,
         passwordUser : bcrypt.hashSync( body.passwordUser, 10),
         registered : {
-            date: Date.now,
+            date: new Date(),
             ip: requestIp.getClientIp( req )
         }
     };
@@ -62,7 +61,6 @@ UserRoutes.post('/singIn', async (req: Request, res: Response) => {
     });        
 
 });
-
 
 UserRoutes.post('/login', (req: Request, res: Response) => {
     let body = req.body;
@@ -89,11 +87,7 @@ UserRoutes.post('/login', (req: Request, res: Response) => {
 
         userDB.passwordUser = '';
 
-        console.log('user db', userDB);
-
         let token: string = await jwt.sign( {userDB}, SEED_KEY, { expiresIn: '1d' } );
-
-        console.log(token);
 
         res.json({
             ok: true,
@@ -104,12 +98,12 @@ UserRoutes.post('/login', (req: Request, res: Response) => {
     });
 });
 
-UserRoutes.get('/profile/get', [verifyToken], (req: Request, res: Response) => {
+UserRoutes.get('/profile/get', [verifyToken], (req: any, res: Response) => {
     
-    let dataUser = req.body.userData;
+    let idUser = req.user._id;
     // console.log(dataUser);
 
-    User.findOne( { _id : dataUser._id }, [], (error: any, userDB: any) => {
+    User.findOne( { _id : idUser }, [], (error: any, userDB: any) => {
 
         if (error) {
             return res.status(400).json({
@@ -128,9 +122,9 @@ UserRoutes.get('/profile/get', [verifyToken], (req: Request, res: Response) => {
     
 });
 
-UserRoutes.post('/profile/update', [verifyToken], (req: Request, res: Response) => {
+UserRoutes.post('/profile/update', [verifyToken], (req: any, res: Response) => {
     let body = req.body;
-    let dataUser = req.body.userData;
+    let idUser = req.user._id;
 
     let arrUpdate = {
         $set: {
@@ -145,7 +139,7 @@ UserRoutes.post('/profile/update', [verifyToken], (req: Request, res: Response) 
         }
     }
 
-    User.update( { _id: dataUser._id }, arrUpdate, (error, userDB) =>  {
+    User.update( { _id: idUser }, arrUpdate, (error, userDB) =>  {
 
         if (error) {
             return res.status(400).json({

@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from 'jsonwebtoken';
 import { SEED_KEY } from '../global/enviroment';
 
-
- export const verifyToken = ( req: Request, res: Response, next: NextFunction ) => {
+ export const verifyToken = ( req: any, res: Response, next: NextFunction ) => {
     let token = req.get('Authorization') || '';
 
     jwt.verify( token, SEED_KEY, (error: any, decoded: any) => {
@@ -14,7 +13,7 @@ import { SEED_KEY } from '../global/enviroment';
             });
         }
 
-        req.body.userData = decoded.userDB;
+        req.user = decoded.userDB;
         
         next();
     });

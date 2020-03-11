@@ -78,7 +78,7 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0
                     nameUser: body.nameUser,
                     passwordUser: bcrypt_1.default.hashSync(body.passwordUser, 10),
                     registered: {
-                        date: Date.now,
+                        date: new Date(),
                         ip: request_ip_1.default.getClientIp(req)
                     }
                 };
@@ -122,11 +122,9 @@ UserRoutes.post('/login', function (req, res) {
                         return [2 /*return*/, res.json({ ok: true, showError: 4 })];
                     }
                     userDB.passwordUser = '';
-                    console.log('user db', userDB);
                     return [4 /*yield*/, jsonwebtoken_1.default.sign({ userDB: userDB }, enviroment_1.SEED_KEY, { expiresIn: '1d' })];
                 case 1:
                     token = _a.sent();
-                    console.log(token);
                     res.json({
                         ok: true,
                         showError: showError,
@@ -139,9 +137,9 @@ UserRoutes.post('/login', function (req, res) {
     }); });
 });
 UserRoutes.get('/profile/get', [authorization_md_1.verifyToken], function (req, res) {
-    var dataUser = req.body.userData;
+    var idUser = req.user._id;
     // console.log(dataUser);
-    user_model_1.User.findOne({ _id: dataUser._id }, [], function (error, userDB) {
+    user_model_1.User.findOne({ _id: idUser }, [], function (error, userDB) {
         if (error) {
             return res.status(400).json({
                 ok: true,
@@ -157,7 +155,7 @@ UserRoutes.get('/profile/get', [authorization_md_1.verifyToken], function (req, 
 });
 UserRoutes.post('/profile/update', [authorization_md_1.verifyToken], function (req, res) {
     var body = req.body;
-    var dataUser = req.body.userData;
+    var idUser = req.user._id;
     var arrUpdate = {
         $set: {
             name: body.name,
@@ -170,7 +168,7 @@ UserRoutes.post('/profile/update', [authorization_md_1.verifyToken], function (r
             aboutMe: body.aboutMe
         }
     };
-    user_model_1.User.update({ _id: dataUser._id }, arrUpdate, function (error, userDB) {
+    user_model_1.User.update({ _id: idUser }, arrUpdate, function (error, userDB) {
         if (error) {
             return res.status(400).json({
                 ok: false,
