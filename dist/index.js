@@ -8,6 +8,8 @@ var cors_1 = __importDefault(require("cors"));
 var mongoose_1 = __importDefault(require("mongoose"));
 var routing_1 = __importDefault(require("./routes/routing"));
 var server_1 = __importDefault(require("./classes/server"));
+var express_fileupload_1 = __importDefault(require("express-fileupload"));
+var enviroment_1 = require("./global/enviroment");
 var server = server_1.default.instance;
 // parse application/x-www-form-urlencoded
 server.app.use(body_parser_1.default.urlencoded({ extended: true }));
@@ -15,9 +17,11 @@ server.app.use(body_parser_1.default.urlencoded({ extended: true }));
 server.app.use(body_parser_1.default.json());
 // config cors
 server.app.use(cors_1.default({ origin: true, credentials: true }));
+// config file-upload
+server.app.use(express_fileupload_1.default());
 // ruting de mis apiRest
 server.app.use(routing_1.default);
-mongoose_1.default.connect('mongodb://localhost:27017/ionic_mgt_db', { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }, function (err) {
+mongoose_1.default.connect(enviroment_1.MONGODB_CONNECT, { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }, function (err) {
     if (err) {
         throw err;
     }

@@ -19,3 +19,20 @@ import { SEED_KEY } from '../global/enviroment';
     });
 };
 
+export const verifyTokenUrl = ( req: any, res: Response, next: NextFunction ) => {
+    let token = req.query.token || 'xD';
+
+    jwt.verify( token, SEED_KEY, (error: any, decoded: any) => {
+        if (error) {
+            return res.status(401).json({
+                ok: false,
+                error
+            });
+        }
+        
+        req.user = decoded;
+        next();
+        
+    });
+};
+

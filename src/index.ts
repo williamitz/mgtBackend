@@ -6,6 +6,10 @@ import mongoose from 'mongoose';
 import AppRouter from './routes/routing';
 import ServerExpress from './classes/server';
 
+import fileUpload from 'express-fileupload';
+import { MONGODB_CONNECT } from './global/enviroment';
+
+
 let server = ServerExpress.instance;
 
 // parse application/x-www-form-urlencoded
@@ -17,10 +21,13 @@ server.app.use( bodyParser.json() );
 // config cors
 server.app.use( cors( { origin: true, credentials: true } ) );
 
+// config file-upload
+server.app.use( fileUpload() );
+
 // ruting de mis apiRest
 server.app.use( AppRouter );
 
-mongoose.connect('mongodb://localhost:27017/ionic_mgt_db', { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }, (err: any) => {
+mongoose.connect( MONGODB_CONNECT , { useNewUrlParser: true, useCreateIndex: true, useUnifiedTopology: true }, (err: any) => {
     if (err) {
         throw err;
     }

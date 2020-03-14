@@ -35,14 +35,21 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var authorization_md_1 = require("../middlewares/authorization.md");
 var post_model_1 = require("../models/post.model");
+var file_system_1 = __importDefault(require("../classes/file-system"));
 var PostRoutes = express_1.Router();
+var fileSystem = new file_system_1.default();
 PostRoutes.post('/post/add', [authorization_md_1.verifyToken], function (req, res) {
     var body = req.body;
     body.user = req.user._id;
+    var imgPost = fileSystem.moveImgTempInPost(req.user._id);
+    body.img = imgPost;
     post_model_1.Post.create(body).then(function (postDB) { return __awaiter(void 0, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -93,5 +100,49 @@ PostRoutes.get('/post/get', [authorization_md_1.verifyToken], function (req, res
         .skip(skip)
         .limit(10)
         .populate('user', '-passwordUser');
+});
+//servicio para subir archivos
+PostRoutes.post('/upload', [authorization_md_1.verifyToken], function (req, res) {
+    if (!req.files) {
+        return res.status(400).json({
+            ok: false,
+            error: {
+                message: 'No se cargaron archivos para subir'
+            }
+        });
+    }
+    var file = req.files.image;
+    if (!file) {
+        return res.status(400).json({
+            ok: false,
+            error: {
+                message: 'No se cargaron archivos para subir'
+            }
+        });
+    }
+    var validTypes = ['png', 'jpg', 'jpeg'];
+    var nameFile = file.name;
+    var arrNameFile = nameFile.split('.');
+    var extensionFile = arrNameFile[arrNameFile.length - 1].toLowerCase();
+    if (validTypes.indexOf(extensionFile) < 0) {
+        return res.status(400).json({
+            ok: false,
+            error: {
+                message: 'Solo se aceptan archivos de tipo ' + validTypes.join(', ')
+            }
+        });
+    }
+    var userId = req.user._id;
+    fileSystem.saveImageTemp(file, extensionFile, userId).then(function (resUpload) {
+        res.json(resUpload);
+    }).catch(function (resError) {
+        res.status(400).json(resError);
+    });
+});
+PostRoutes.get('/image/:user/:img', [authorization_md_1.verifyTokenUrl], function (req, res) {
+    var userId = req.params.user || 'xD';
+    var srcImg = req.params.img || 'xD';
+    var pathImg = fileSystem.getPathImgUploaded(userId, srcImg);
+    res.sendFile(pathImg);
 });
 exports.default = PostRoutes;

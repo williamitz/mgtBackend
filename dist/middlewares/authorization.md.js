@@ -18,3 +18,16 @@ exports.verifyToken = function (req, res, next) {
         next();
     });
 };
+exports.verifyTokenUrl = function (req, res, next) {
+    var token = req.query.token || 'xD';
+    jsonwebtoken_1.default.verify(token, enviroment_1.SEED_KEY, function (error, decoded) {
+        if (error) {
+            return res.status(401).json({
+                ok: false,
+                error: error
+            });
+        }
+        req.user = decoded;
+        next();
+    });
+};
