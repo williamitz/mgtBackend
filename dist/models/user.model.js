@@ -27,6 +27,10 @@ var userSchema = new mongoose_1.Schema({
         type: String,
         required: [true, 'La clave de usuario es requerida'],
     },
+    accountPrivate: {
+        type: Boolean,
+        required: [true, 'La privacidad de la cuenta es requerida']
+    },
     email: {
         type: String,
         required: false,
@@ -45,6 +49,7 @@ var userSchema = new mongoose_1.Schema({
     sex: {
         type: String,
         required: false,
+        enum: ['M', 'F', 'O'],
         default: 'O'
     },
     dateBorn: {
@@ -81,6 +86,12 @@ var userSchema = new mongoose_1.Schema({
         required: false
     }
 });
+userSchema.methods.toJson = function () {
+    var user = this;
+    var userObj = user.toObject();
+    delete userObj.passwordUser;
+    return userObj;
+};
 userSchema.method('comparePassword', function (password) {
     if (bcrypt_1.default.compareSync(password, this.passwordUser)) {
         return true;

@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -38,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var authorization_md_1 = require("../middlewares/authorization.md");
@@ -50,10 +50,10 @@ PostRoutes.post('/post/add', [authorization_md_1.verifyToken], function (req, re
     body.user = req.user._id;
     var imgPost = fileSystem.moveImgTempInPost(req.user._id);
     body.img = imgPost;
-    post_model_1.Post.create(body).then(function (postDB) { return __awaiter(void 0, void 0, void 0, function () {
+    post_model_1.Post.create(body).then(function (postDB) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, postDB.populate('user', '-passwordUser').execPopulate()];
+                case 0: return [4 /*yield*/, postDB.populate({ path: 'user', select: ['nameComplete', 'nameUser', 'imgUser'] }).execPopulate()];
                 case 1:
                     _a.sent();
                     res.json({
@@ -73,7 +73,7 @@ PostRoutes.post('/post/add', [authorization_md_1.verifyToken], function (req, re
 PostRoutes.get('/post/get', [authorization_md_1.verifyToken], function (req, res) {
     var page = req.query.page || 1;
     var skip = (page - 1) * 10;
-    post_model_1.Post.find({ user: req.user._id }, [], function (error, documents) { return __awaiter(void 0, void 0, void 0, function () {
+    post_model_1.Post.find({ user: req.user._id }, [], function (error, documents) { return __awaiter(_this, void 0, void 0, function () {
         var _a, _b, _c;
         return __generator(this, function (_d) {
             switch (_d.label) {
@@ -99,7 +99,7 @@ PostRoutes.get('/post/get', [authorization_md_1.verifyToken], function (req, res
     }); }).sort({ created: -1 })
         .skip(skip)
         .limit(10)
-        .populate('user', '-passwordUser');
+        .populate({ path: 'user', select: ['nameComplete', 'nameUser', 'imgUser'] });
 });
 //servicio para subir archivos
 PostRoutes.post('/upload', [authorization_md_1.verifyToken], function (req, res) {

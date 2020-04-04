@@ -19,7 +19,7 @@ PostRoutes.post('/post/add', [verifyToken], (req: any, res: Response) => {
 
     Post.create( body ).then( async (postDB) => {
 
-        await postDB.populate('user','-passwordUser').execPopulate();
+        await postDB.populate( { path: 'user', select:['nameComplete', 'nameUser', 'imgUser'] } ).execPopulate();
 
         res.json({
             ok: true,
@@ -56,7 +56,7 @@ PostRoutes.get('/post/get', [verifyToken], (req: any, res: Response) => {
     }).sort( { created: -1 } )
     .skip( skip )
     .limit( 10 )
-    .populate('user', '-passwordUser');
+    .populate({ path: 'user', select: ['nameComplete', 'nameUser', 'imgUser'] } );
 });
 
 //servicio para subir archivos

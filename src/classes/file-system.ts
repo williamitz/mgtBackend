@@ -1,8 +1,8 @@
 import { UploadedFile } from "express-fileupload";
+import { IResPromise } from '../interfaces/resPromise.interface';
 import path from 'path';
 import fs from 'fs';
 import uniqid from 'uniqid';
-import { IResPromise } from '../interfaces/resPromise.interface';
 
 export default class FileSystem {
 

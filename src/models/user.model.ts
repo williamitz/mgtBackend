@@ -23,6 +23,10 @@ let userSchema = new Schema({
         type: String,
         required: [true, 'La clave de usuario es requerida'],
     },
+    accountPrivate: {
+        type: Boolean,
+        required: [true, 'La privacidad de la cuenta es requerida']
+    },
     email: {
         type: String,
         required: false,
@@ -41,6 +45,7 @@ let userSchema = new Schema({
     sex: {
         type: String,
         required: false,
+        enum: ['M', 'F', 'O'],
         default: 'O'
     },
     dateBorn: {
@@ -78,6 +83,13 @@ let userSchema = new Schema({
     }
 });
 
+userSchema.methods.toJson = function() {
+    let user = this;
+    let userObj = user.toObject();
+    delete userObj.passwordUser;
+    return userObj;
+}
+
 userSchema.method('comparePassword', function (password: string): boolean {
 
     if ( bcrypt.compareSync( password, this.passwordUser ) ) {
@@ -85,8 +97,8 @@ userSchema.method('comparePassword', function (password: string): boolean {
     } else {
         return false;
     }
+    
 });
-
 
 interface IUser extends Document {
     name: string;
@@ -94,6 +106,7 @@ interface IUser extends Document {
     nameComplete: string;
     nameUser: string;
     passwordUser: string;
+    accountPrivate: boolean;
     email: string;
     phone: string;
     imgUser: string;

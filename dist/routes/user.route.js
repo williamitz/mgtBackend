@@ -1,10 +1,9 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -38,21 +37,27 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var express_1 = require("express");
 var request_ip_1 = __importDefault(require("request-ip"));
-var user_model_1 = require("../models/user.model");
 var bcrypt_1 = __importDefault(require("bcrypt"));
 var jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+var mongoose_1 = __importDefault(require("mongoose"));
 var enviroment_1 = require("../global/enviroment");
 var authorization_md_1 = require("../middlewares/authorization.md");
+var user_model_1 = require("../models/user.model");
+var comunity_model_1 = require("../models/comunity.model");
+var post_model_1 = require("../models/post.model");
 var UserRoutes = express_1.Router();
-UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0, void 0, function () {
-    var body, resVerify, newUser;
+UserRoutes.post('/singIn', function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+    var body, sexValid, resVerify, newUser;
+    var _this = this;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 body = req.body;
+                sexValid = ['F', 'M', 'O'];
                 return [4 /*yield*/, verifyUser(body.nameUser)];
             case 1:
                 resVerify = _a.sent();
@@ -71,24 +76,56 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0
                             showError: resVerify.showError
                         })];
                 }
+                if (sexValid.indexOf(body.sex) < 0) {
+                    return [2 /*return*/, res.json({
+                            ok: true,
+                            showError: 4
+                        })];
+                }
                 newUser = {
                     name: body.name,
                     surname: body.surname,
                     nameComplete: body.surname + ", " + body.name,
                     nameUser: body.nameUser,
+                    imgUser: body.imgUser,
+                    sex: body.sex,
                     passwordUser: bcrypt_1.default.hashSync(body.passwordUser, 10),
+                    accountPrivate: body.accountPrivate,
                     registered: {
                         date: new Date(),
-                        ip: request_ip_1.default.getClientIp(req)
+                        ipUser: request_ip_1.default.getClientIp(req)
                     }
                 };
-                user_model_1.User.create(newUser).then(function (userDB) {
-                    res.json({
-                        ok: true,
-                        data: userDB,
-                        showError: resVerify.showError
+                user_model_1.User.create(newUser).then(function (userDB) { return __awaiter(_this, void 0, void 0, function () {
+                    var token, comunity;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, jsonwebtoken_1.default.sign({ userDB: userDB }, enviroment_1.SEED_KEY, { expiresIn: '1d' })];
+                            case 1:
+                                token = _a.sent();
+                                comunity = {
+                                    user: userDB._id,
+                                    followers: [],
+                                    followed: [],
+                                    registered: {
+                                        date: new Date(),
+                                        idUser: userDB._id,
+                                        ipUser: request_ip_1.default.getClientIp(req)
+                                    }
+                                };
+                                return [4 /*yield*/, comunity_model_1.Comunity.create(comunity)];
+                            case 2:
+                                _a.sent();
+                                res.json({
+                                    ok: true,
+                                    data: userDB,
+                                    token: token,
+                                    showError: 0
+                                });
+                                return [2 /*return*/];
+                        }
                     });
-                }).catch(function (err) {
+                }); }).catch(function (err) {
                     return res.status(400).json({
                         ok: false,
                         error: err
@@ -100,7 +137,7 @@ UserRoutes.post('/singIn', function (req, res) { return __awaiter(void 0, void 0
 }); });
 UserRoutes.post('/login', function (req, res) {
     var body = req.body;
-    user_model_1.User.findOne({ nameUser: body.nameUser }, [], function (err, userDB) { return __awaiter(void 0, void 0, void 0, function () {
+    user_model_1.User.findOne({ nameUser: body.nameUser }, [], function (err, userDB) { return __awaiter(_this, void 0, void 0, function () {
         var showError, token;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -153,6 +190,97 @@ UserRoutes.get('/profile/get', [authorization_md_1.verifyToken], function (req, 
         });
     });
 });
+UserRoutes.get('/profileInfo/:id', [authorization_md_1.verifyToken], function (req, res) {
+    var userToken = req.user._id;
+    var idUser = req.params.id || '';
+    var arrWhere = {
+        _id: mongoose_1.default.Types.ObjectId(idUser),
+        statusRegister: true
+    };
+    var arrProject = [
+        'nameComplete',
+        'nameUser',
+        'accountPrivate',
+        'registered',
+        'imgUser',
+        'aboutMe'
+    ];
+    user_model_1.User.findOne(arrWhere, arrProject, function (error, userDB) {
+        if (error) {
+            return res.status(400).json({
+                ok: false,
+                error: error
+            });
+        }
+        if (!userDB) {
+            return res.status(400).json({
+                ok: false,
+                error: {
+                    message: 'No se encontró registro de usuario'
+                }
+            });
+        }
+        var arrWhereProfile = { user: mongoose_1.default.Types.ObjectId(idUser) };
+        comunity_model_1.Comunity.findOne(arrWhereProfile, [], function (errorComunity, comunityDB) { return __awaiter(_this, void 0, void 0, function () {
+            var myComunity, arrMyFollowed, followed, post;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (errorComunity) {
+                            return [2 /*return*/, res.status(400).json({
+                                    ok: false,
+                                    error: errorComunity
+                                })];
+                        }
+                        return [4 /*yield*/, comunity_model_1.Comunity.findOne({ user: mongoose_1.default.Types.ObjectId(userToken) }, ['followed'])];
+                    case 1:
+                        myComunity = _a.sent();
+                        arrMyFollowed = myComunity.followed || [];
+                        followed = false;
+                        arrMyFollowed.forEach(function (follower) {
+                            console.log(follower.user, ' = ', idUser);
+                            if (follower.user.toHexString() === idUser) {
+                                followed = true;
+                                console.log('encontrado', follower.user);
+                            }
+                        });
+                        post = [];
+                        if (!userDB.accountPrivate) {
+                            post_model_1.Post.find(arrWhereProfile, [], function (errorPost, postDB) {
+                                if (errorPost) {
+                                    return res.status(400).json({
+                                        ok: false,
+                                        error: errorPost
+                                    });
+                                }
+                                if (!postDB) {
+                                    post = [];
+                                }
+                                else {
+                                    post = postDB;
+                                }
+                                return res.json({
+                                    ok: true,
+                                    followed: followed,
+                                    user: userDB,
+                                    comunity: comunityDB,
+                                    post: post
+                                });
+                            });
+                        }
+                        else {
+                            res.json({
+                                ok: true,
+                                user: userDB,
+                                comunity: comunityDB,
+                            });
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        }); });
+    });
+});
 UserRoutes.post('/profile/update', [authorization_md_1.verifyToken], function (req, res) {
     var body = req.body;
     var idUser = req.user._id;
@@ -191,7 +319,7 @@ UserRoutes.post('/profile/update', [authorization_md_1.verifyToken], function (r
 });
 function verifyUser(nameUser) {
     return new Promise(function (resolve) {
-        user_model_1.User.findOne({ nameUser: nameUser }, ['statusRegister'], function (err, userDB) {
+        user_model_1.User.findOne({ nameUser: nameUser }, function (err, userDB) {
             if (err) {
                 resolve({ ok: false, error: err, message: 'Error interno del servidor, al validar usuario' });
             }
